@@ -1,0 +1,89 @@
+# Case Processing Configuration
+case:
+  processing:
+    concurrent-threads: 5
+  excel:
+    default-path: cases.xlsx
+  api:
+    url: http://localhost:8080
+    endpoint: /cases
+
+# Excel Mapping Configuration
+# Maps different Excel file types to CaseRequest fields
+excel:
+  mapping:
+    types:
+      # Mapping for "Incoming Investigations Data" Excel type
+      incoming-investigations:
+        title-keywords:
+          - "Incoming Investigations Data"
+          - "Incoming Investigations"
+        field-mappings:
+          # Excel Header -> CaseRequest Field Path
+          "Subject": "caseObj.title"
+          "Description": "caseObj.description"
+          "Stage": "caseObj.status"
+          "Type": "caseObj.type"
+          "Client Name": "caseObj.primaryParty.name"
+          "Teams": "caseObj.team"
+          "Client Due Date": "caseObj.dueDate"
+        required-fields:
+          - "Subject"
+          - "Description"
+          - "Type"
+
+      # Mapping for "Large Cash Balance" Excel type
+      large-cash-balance:
+        title-keywords:
+          - "Large Cash Balance"
+          - "Large Cash"
+        field-mappings:
+          "Subject": "caseObj.title"
+          "Description": "caseObj.description"
+          "Stage": "caseObj.status"
+          "Type": "caseObj.type"
+          "Priority": "caseObj.priority"
+          "ECI": "caseObj.primaryParty.eciId"
+          "CST Name": "caseObj.primaryParty.name"
+          "Client Due Date": "caseObj.dueDate"
+          "Assigned User Name": "caseObj.assignedUser"
+        required-fields:
+          - "Subject"
+          - "Description"
+          - "ECI"
+
+      # Mapping for "Standing Exceptions Report" Excel type
+      standing-exceptions:
+        title-keywords:
+          - "Standing Exceptions Report"
+          - "Standing Exceptions"
+        field-mappings:
+          "TITLE": "caseObj.title"
+          "NAME": "caseObj.primaryParty.name"
+          "ACCT TYPE": "caseObj.accountType"
+          "DEBIT ACCOUNT": "caseObj.debitAccount"
+          "FREQ": "caseObj.frequency"
+          "MONTH": "caseObj.month"
+          "DAY": "caseObj.day"
+          "LNECODE": "caseObj.lineCode"
+          "TX REMIT": "caseObj.txRemit"
+          "PAYEE": "caseObj.payee"
+          "INCOME AMT": "caseObj.incomeAmount"
+          "INCOME PCT": "caseObj.incomePercentage"
+          "PRINC AMT": "caseObj.principalAmount"
+          "PRINC PCT": "caseObj.principalPercentage"
+          "DAR AVAILABLE BALANCE": "caseObj.availableBalance"
+        required-fields:
+          - "TITLE"
+          - "NAME"
+
+      # Default mapping (fallback)
+      default:
+        title-keywords:
+          - "default"
+        field-mappings:
+          "Subject": "caseObj.title"
+          "Client": "caseObj.primaryParty.name"
+          "Case Description": "caseObj.description"
+        required-fields:
+          - "Subject"
