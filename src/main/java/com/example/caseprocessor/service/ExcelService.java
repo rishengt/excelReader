@@ -102,9 +102,14 @@ public class ExcelService {
      * Updates Excel file with case numbers
      */
     public void updateExcelWithCaseNumbers(String filePath, List<ExcelRowData> rows) throws IOException {
-        try (FileInputStream fis = new FileInputStream(filePath);
-             Workbook workbook = new XSSFWorkbook(fis)) {
+        Workbook workbook;
+        
+        // Read workbook and close input stream first
+        try (FileInputStream fis = new FileInputStream(filePath)) {
+            workbook = new XSSFWorkbook(fis);
+        }
 
+        try {
             Sheet sheet = workbook.getSheetAt(0);
             Row headerRow = sheet.getRow(0);
 
@@ -137,10 +142,13 @@ public class ExcelService {
                 }
             }
 
-            // Write back to file
+            // Write back to file - input stream is now closed, so we can open output stream
             try (FileOutputStream fos = new FileOutputStream(filePath)) {
                 workbook.write(fos);
             }
+        } finally {
+            // Ensure workbook is closed even if write fails
+            workbook.close();
         }
     }
 
