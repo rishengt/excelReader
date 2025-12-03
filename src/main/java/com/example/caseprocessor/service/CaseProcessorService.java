@@ -82,7 +82,7 @@ public class CaseProcessorService {
                                             .onErrorReturn(new CaseResponse("ERROR"))
                                             .thenReturn(rowData);
                                 } catch (Exception e) {
-                                    log.error("Error mapping row {} to CaseRequest: {}",
+                                    log.error("Error mapping row {} to CaseRequest: {}", 
                                             rowData.getRowIndex(), e.getMessage());
                                     rowData.setCaseNumber("ERROR");
                                     return Mono.just(rowData);

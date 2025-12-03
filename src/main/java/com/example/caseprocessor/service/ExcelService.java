@@ -1,6 +1,5 @@
 package com.example.caseprocessor.service;
 
-import com.example.caseprocessor.model.CaseData;
 import com.example.caseprocessor.model.ExcelRowData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -102,7 +101,7 @@ public class ExcelService {
     /**
      * Updates Excel file with case numbers
      */
-    public void updateExcelWithCaseNumbers(String filePath, List<CaseData> cases) throws IOException {
+    public void updateExcelWithCaseNumbers(String filePath, List<ExcelRowData> rows) throws IOException {
         try (FileInputStream fis = new FileInputStream(filePath);
              Workbook workbook = new XSSFWorkbook(fis)) {
 
@@ -125,15 +124,15 @@ public class ExcelService {
             }
 
             // Update case numbers
-            for (CaseData caseData : cases) {
-                if (caseData.getCaseNumber() != null) {
-                    Row row = sheet.getRow(caseData.getRowIndex());
+            for (ExcelRowData rowData : rows) {
+                if (rowData.getCaseNumber() != null) {
+                    Row row = sheet.getRow(rowData.getRowIndex());
                     if (row != null) {
                         Cell cell = row.getCell(caseNumberCol);
                         if (cell == null) {
                             cell = row.createCell(caseNumberCol);
                         }
-                        cell.setCellValue(caseData.getCaseNumber());
+                        cell.setCellValue(rowData.getCaseNumber());
                     }
                 }
             }
