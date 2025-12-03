@@ -1,6 +1,8 @@
 package com.example.caseprocessor.service;
 
 import com.example.caseprocessor.model.CaseData;
+import com.example.caseprocessor.model.ExcelRowData;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -10,75 +12,91 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Service for reading and writing Excel files
+ * Generic service for reading and writing Excel files
+ * Returns flexible ExcelRowData that can handle any header structure
  */
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class ExcelService {
 
-    private static final String SUBJECT_HEADER = "Subject";
-    private static final String CLIENT_HEADER = "Client";
-    private static final String CASE_DESCRIPTION_HEADER = "Case Description";
     private static final String CASE_NUMBER_HEADER = "Case Number";
+    private final ExcelTypeDetector typeDetector;
 
     /**
-     * Reads Excel file and returns list of CaseData objects
+     * Reads Excel file and returns list of ExcelRowData objects
+     * Automatically detects Excel type and includes all headers dynamically
      */
-    public List<CaseData> readExcel(String filePath) throws IOException {
-        List<CaseData> cases = new ArrayList<>();
+    public List<ExcelRowData> readExcel(String filePath) throws IOException {
+        List<ExcelRowData> rows = new ArrayList<>();
 
         try (FileInputStream fis = new FileInputStream(filePath);
              Workbook workbook = new XSSFWorkbook(fis)) {
 
+            // Detect Excel type
+            String excelType = typeDetector.detectExcelType(workbook);
+            log.info("Detected Excel type: {}", excelType);
+
             Sheet sheet = workbook.getSheetAt(0);
             Row headerRow = sheet.getRow(0);
 
-            // Find column indices
-            int subjectCol = -1, clientCol = -1, caseDescCol = -1;
+            if (headerRow == null) {
+                throw new IllegalArgumentException("Excel file has no header row");
+            }
 
+            // Build header map: column index -> header name
+            Map<Integer, String> headerMap = new HashMap<>();
             for (Cell cell : headerRow) {
-                String cellValue = getCellValueAsString(cell);
-                if (SUBJECT_HEADER.equalsIgnoreCase(cellValue)) {
-                    subjectCol = cell.getColumnIndex();
-                } else if (CLIENT_HEADER.equalsIgnoreCase(cellValue)) {
-                    clientCol = cell.getColumnIndex();
-                } else if (CASE_DESCRIPTION_HEADER.equalsIgnoreCase(cellValue)) {
-                    caseDescCol = cell.getColumnIndex();
+                String headerName = getCellValueAsString(cell);
+                if (headerName != null && !headerName.trim().isEmpty()) {
+                    headerMap.put(cell.getColumnIndex(), headerName.trim());
                 }
             }
 
-            if (subjectCol == -1 || clientCol == -1 || caseDescCol == -1) {
-                throw new IllegalArgumentException("Required headers not found in Excel file");
+            if (headerMap.isEmpty()) {
+                throw new IllegalArgumentException("No headers found in Excel file");
             }
+
+            log.info("Found {} headers: {}", headerMap.size(), headerMap.values());
 
             // Read data rows
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
 
-                String subject = getCellValueAsString(row.getCell(subjectCol));
-                String client = getCellValueAsString(row.getCell(clientCol));
-                String caseDescription = getCellValueAsString(row.getCell(caseDescCol));
+                ExcelRowData rowData = new ExcelRowData();
+                rowData.setExcelType(excelType);
+                rowData.setRowIndex(i);
 
-                // Skip empty rows
-                if (subject == null || subject.trim().isEmpty()) {
-                    continue;
+                boolean hasData = false;
+                // Read all columns based on header map
+                for (Map.Entry<Integer, String> entry : headerMap.entrySet()) {
+                    int colIndex = entry.getKey();
+                    String headerName = entry.getValue();
+                    String cellValue = getCellValueAsString(row.getCell(colIndex));
+
+                    if (cellValue != null && !cellValue.trim().isEmpty()) {
+                        rowData.setValue(headerName, cellValue.trim());
+                        hasData = true;
+                    } else {
+                        rowData.setValue(headerName, "");
+                    }
                 }
 
-                CaseData caseData = new CaseData();
-                caseData.setSubject(subject);
-                caseData.setClient(client);
-                caseData.setCaseDescription(caseDescription);
-                caseData.setRowIndex(i);
-
-                cases.add(caseData);
+                // Skip completely empty rows
+                if (hasData) {
+                    rows.add(rowData);
+                }
             }
         }
 
-        return cases;
+        log.info("Read {} data rows from Excel file", rows.size());
+        return rows;
     }
 
     /**

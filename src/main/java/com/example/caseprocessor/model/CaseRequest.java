@@ -11,9 +11,24 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CaseRequest {
-    private String subject;
-    private String client;
-    private String caseDescription;
+    private CaseObject caseObj;
+
+    @Data
+    public static class CaseObject {
+        private String title;
+        private String type;
+        private String status;
+        private String teamCode;
+        private String team;
+        private String priority;
+        private PrimaryParty primaryParty;
+    }
+    @Data
+    public static class PrimaryParty {
+        private String eciId;
+        private String branchCode = "USA";
+    }
+
 }
 
 
