@@ -43,9 +43,24 @@ public class CaseMapperService {
 
         // Apply field mappings
         for (Map.Entry<String, String> entry : mapping.getFieldMappings().entrySet()) {
-            String excelHeader = entry.getKey();
+            String configuredHeader = entry.getKey();
             String fieldPath = entry.getValue();
-            String value = rowData.getValue(excelHeader);
+            
+            // Try to find the value using the exact configured header
+            String value = rowData.getValue(configuredHeader);
+            
+            // If not found, try to find a matching header in the data
+            // This handles cases where header names might have been normalized
+            if ((value == null || value.isEmpty()) && rowData.getData() != null) {
+                for (Map.Entry<String, String> dataEntry : rowData.getData().entrySet()) {
+                    if (headersMatch(dataEntry.getKey(), configuredHeader)) {
+                        value = dataEntry.getValue();
+                        log.debug("Found matching header: '{}' for configured header: '{}'", 
+                                dataEntry.getKey(), configuredHeader);
+                        break;
+                    }
+                }
+            }
 
             if (value != null && !value.trim().isEmpty()) {
                 setFieldValue(request, fieldPath, value);
@@ -56,6 +71,22 @@ public class CaseMapperService {
         validateRequiredFields(rowData, mapping);
 
         return request;
+    }
+
+    /**
+     * Check if two header names match, accounting for potential normalization
+     * Exact match is preferred, but also checks by removing common patterns
+     */
+    private boolean headersMatch(String actual, String configured) {
+        // Exact match
+        if (actual.equals(configured)) {
+            return true;
+        }
+        
+        // Match by removing spaces and using case-insensitive comparison
+        String actualNormalized = actual.replaceAll("\\s+", "").toLowerCase();
+        String configuredNormalized = configured.replaceAll("\\s+", "").toLowerCase();
+        return actualNormalized.equals(configuredNormalized);
     }
 
     /**

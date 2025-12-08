@@ -1,6 +1,7 @@
 package com.example.caseprocessor.config;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,6 +15,7 @@ import java.util.Map;
 @Configuration
 @ConfigurationProperties(prefix = "excel.mapping")
 @Data
+@Slf4j
 public class ExcelMappingConfig {
 
     /**
@@ -47,6 +49,17 @@ public class ExcelMappingConfig {
      */
     public ExcelTypeMapping getMappingForType(String excelType) {
         return types.get(excelType);
+    }
+
+    /**
+     * Log loaded configuration (for debugging)
+     */
+    public void logLoadedConfiguration() {
+        log.info("Loaded Excel Type Mappings:");
+        for (Map.Entry<String, ExcelTypeMapping> entry : types.entrySet()) {
+            log.info("  Type: {}", entry.getKey());
+            log.info("    Field Mappings: {}", entry.getValue().getFieldMappings());
+        }
     }
 
     /**
